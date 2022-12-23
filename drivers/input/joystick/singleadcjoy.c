@@ -612,8 +612,7 @@ static void joypad_adc_check(struct input_polled_dev *poll_dev)
 			} else {
 				// radial deadzone instead of snap
 				// should have plenty of head-room to not overflow 32bits 
-				int rdz = (joypad->bt_adc_deadzone * joypad->bt_adc_deadzone) 
-						+ (joypad->bt_adc_deadzone * joypad->bt_adc_deadzone);
+				int rdz = joypad->bt_adc_deadzone * joypad->bt_adc_deadzone;
 				int mag = (abs(stick_axis[0].value) * abs(stick_axis[0].value))
 						+ (abs(stick_axis[1].value) * abs(stick_axis[1].value));
 				if (mag < rdz) {
