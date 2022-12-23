@@ -579,37 +579,72 @@ static void joypad_gpio_check(struct input_polled_dev *poll_dev)
 static void joypad_adc_check(struct input_polled_dev *poll_dev)
 {
 	struct joypad *joypad = poll_dev->private;
-	int nbtn;
+	int axis, stick, error;
 
-	for (nbtn = 0; nbtn < joypad->amux_count; nbtn++) {
-		struct bt_adc *adc = &joypad->adcs[nbtn];
+	for (stick = 0; stick < joypad->amux_count / 2; stick++) {
+		struct bt_adc *stick_axis = &joypad->adcs[stick * 2];
+		error = 0;
 
-		adc->value = joypad_adc_read(joypad->amux, adc);
-		if (!adc->value) {
-			//dev_err(joypad->dev, "%s : saradc channels[%d]! adc->value : %d\n",__func__, nbtn, adc->value);
-			continue;
+		for (axis = 0; axis < 2; axis++)
+		{
+			struct bt_adc *adc = &joypad->adcs[(stick * 2) + axis];
+
+			adc->value = joypad_adc_read(joypad->amux, adc);
+			if (!adc->value) {
+				error |= 1 << axis; // preserve which axis had the error
+				//dev_err(joypad->dev, "%s : saradc channels[%d]! adc->value : %d\n",__func__, ((stick * 2) + axis), adc->value);
+				continue;
+			}
+			adc->value = adc->value - adc->cal;
 		}
-		adc->value = adc->value - adc->cal;
 
 		/* Joystick Deadzone check */
 		if (joypad->bt_adc_deadzone) {
-			if (abs(adc->value) < joypad->bt_adc_deadzone)
-				adc->value = 0;
+			if (error) {
+				// fallback to the original snap code so at least 1 axis works
+				// the assumption is that the ADC doesn't keep reading 0
+				// if one of the axis is constantly spitting 0s we'll always end up here.
+				for (axis = 0; axis < 2; axis++) {
+					if (!(error & (1 << axis)))
+						if (abs(stick_axis[axis].value) < joypad->bt_adc_deadzone)
+							stick_axis[axis].value = 0;
+				}
+			} else {
+				// radial deadzone instead of snap
+				// should have plenty of head-room to not overflow 32bits 
+				int rdz = (joypad->bt_adc_deadzone * joypad->bt_adc_deadzone) 
+						+ (joypad->bt_adc_deadzone * joypad->bt_adc_deadzone);
+				int mag = (abs(stick_axis[0].value) * abs(stick_axis[0].value))
+						+ (abs(stick_axis[1].value) * abs(stick_axis[1].value));
+				if (mag < rdz) {
+					stick_axis[0].value = 0;
+					stick_axis[1].value = 0;
+				}
+			}
 		}
 
-		/* adc data tuning */
-		if (adc->tuning_n && adc->value < 0)
-			adc->value = ADC_DATA_TUNING(adc->value, adc->tuning_n);
-		if (adc->tuning_p && adc->value > 0)
-			adc->value = ADC_DATA_TUNING(adc->value, adc->tuning_p);
+		for (axis = 0; axis < 2; axis++)
+		{
+			struct bt_adc *adc = &joypad->adcs[(stick * 2) + axis];
 
-		adc->value = adc->value > adc->max ? adc->max : adc->value;
-		adc->value = adc->value < adc->min ? adc->min : adc->value;
+			if (error & (1 << axis)) 
+				continue;
 
-		input_report_abs(poll_dev->input,
-			adc->report_type,
-			adc->invert ? adc->value * (-1) : adc->value);
+			/* adc data tuning */
+			if (adc->tuning_n && adc->value < 0)
+				adc->value = ADC_DATA_TUNING(adc->value, adc->tuning_n);
+			if (adc->tuning_p && adc->value > 0)
+				adc->value = ADC_DATA_TUNING(adc->value, adc->tuning_p);
+
+			adc->value = adc->value > adc->max ? adc->max : adc->value;
+			adc->value = adc->value < adc->min ? adc->min : adc->value;
+
+			input_report_abs(poll_dev->input,
+				adc->report_type,
+				adc->invert ? adc->value * (-1) : adc->value);
+		}
 	}
+
 	input_sync(poll_dev->input);
 }
 
