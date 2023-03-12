@@ -390,6 +390,8 @@ static int panel_simple_get_fixed_modes(struct panel_simple *panel)
 	if (!panel->desc)
 		return 0;
 
+	dev_info(drm->dev, "panel_simple_get_fixed_modes()\n");
+
 	for (i = 0; i < panel->desc->num_timings; i++) {
 		const struct display_timing *dt = &panel->desc->timings[i];
 		struct videomode vm;
@@ -574,7 +576,7 @@ static int panel_simple_prepare(struct drm_panel *panel)
 
 	if (p->prepared)
 		return 0;
-	dev_info(panel->dev, "panel_simple_prepare\n");
+	dev_info(panel->dev, "panel_simple_prepare()\n");
 	err = panel_simple_regulator_enable(p);
 	if (err < 0) {
 		dev_err(panel->dev, "failed to enable supply: %d\n", err);
@@ -649,6 +651,8 @@ static int panel_simple_get_modes(struct drm_panel *panel)
 {
 	struct panel_simple *p = to_panel_simple(panel);
 	int num = 0;
+
+	dev_info(panel->dev, "panel_simple_get_modes(): panel# %d\n", p->desc->panel_number);
 
 	/* probe EDID if a DDC bus is available */
 	if (p->ddc) {
@@ -3454,6 +3458,9 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 
 	desc = id->data ? id->data : d;
 
+	dev_info(dev, "desc data loaded for panel #%d: id: %02x %02x\n", 
+		 desc->panel_number, desc->panel_id[0], desc->panel_id[1]);
+	
 	err = panel_simple_probe(&dsi->dev, &desc->desc);
 	if (err < 0)
 		return err;

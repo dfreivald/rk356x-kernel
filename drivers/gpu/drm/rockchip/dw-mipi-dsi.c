@@ -1268,7 +1268,7 @@ static void dw_mipi_dsi_enable(struct dw_mipi_dsi *dsi)
 {
 	struct drm_display_mode *mode = &dsi->mode;
 	u32 val;
-
+	dev_info(dsi->dev, "dw_mipi_dsi_enable()\n");
 	regmap_write(dsi->regmap, DSI_PWR_UP, RESET);
 
 	switch (dsi->format) {
@@ -1325,7 +1325,7 @@ static void dw_mipi_dsi_encoder_enable(struct drm_encoder *encoder)
 {
 	struct dw_mipi_dsi *dsi = encoder_to_dsi(encoder);
 	unsigned long lane_rate = dw_mipi_dsi_get_lane_rate(dsi);
-
+	dev_info(dsi->dev, "dw_mipi_dsi_encoder_enable()\n");
 	if (dsi->dphy.phy)
 		dw_mipi_dsi_set_hs_clk(dsi, lane_rate);
 	else
