@@ -3458,15 +3458,17 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 
 	desc = id->data ? id->data : d;
 
-	dev_info(dev, "desc data loaded for panel #%d: id: %02x %02x\n", 
-		 desc->panel_number, desc->panel_id[0], desc->panel_id[1]);
-	
 	err = panel_simple_probe(&dsi->dev, &desc->desc);
 	if (err < 0)
 		return err;
 
 	panel = dev_get_drvdata(dev);
 	panel->dsi = dsi;
+
+	dev_info(dev, "desc data loaded for panel #%d: id: %02x %02x\n", 
+		 panel->desc->panel_number, 
+		 panel->desc->panel_id[0], 
+		 panel->desc->panel_id[1]);
 
 	dsi->mode_flags = desc->flags;
 	dsi->format = desc->format;
