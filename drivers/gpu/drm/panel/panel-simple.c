@@ -103,6 +103,11 @@ struct panel_desc {
 
 	struct panel_cmd_seq *init_seq;
 	struct panel_cmd_seq *exit_seq;
+	struct panel_cmd_seq *read_id_seq;
+
+	u8 panel_id[2];
+	int panel_id_reg;
+	int panel_number;
 };
 
 struct panel_simple {
@@ -569,7 +574,7 @@ static int panel_simple_prepare(struct drm_panel *panel)
 
 	if (p->prepared)
 		return 0;
-//printk("panel_simple_prepare  \n");
+	dev_info(panel->dev, "panel_simple_prepare\n");
 	err = panel_simple_regulator_enable(p);
 	if (err < 0) {
 		dev_err(panel->dev, "failed to enable supply: %d\n", err);
@@ -590,6 +595,14 @@ static int panel_simple_prepare(struct drm_panel *panel)
 
 	if (p->desc->delay.init)
 		panel_simple_sleep(p->desc->delay.init);
+
+	if (p->desc->read_id_seq && p->dsi) {
+		u8 id[2];
+		panel_simple_xfer_dsi_cmd_seq(p, p->desc->read_id_seq);
+		mipi_dsi_set_maximum_return_packet_size(p->dsi, ARRAY_SIZE(id));
+		mipi_dsi_generic_read(p->dsi, &p->desc->panel_id_reg, 1, id, ARRAY_SIZE(id));
+		dev_info(panel->dev, "PANEL ID: %02x %02x", id[0], id[1]);
+	}
 
 	if (p->desc->init_seq) {
 		if (p->dsi)
@@ -3141,6 +3154,26 @@ static int panel_simple_of_get_desc_data(struct device *dev,
 		}
 	}
 
+	data = of_get_property(np, "panel-read-id-sequence", &len);
+	if (data) {
+		desc->read_id_seq = devm_kzalloc(dev, sizeof(*desc->read_id_seq),
+					         GFP_KERNEL);
+		if (!desc->read_id_seq)
+			return -ENOMEM;
+
+		err = panel_simple_parse_cmd_seq(dev, data, len,
+						 desc->read_id_seq);
+		if (err) {
+			dev_err(dev, "failed to parse panel-read-id-sequence\n");
+			return err;
+		}
+
+		of_property_read_u32(np, "num", &desc->panel_number);
+		of_property_read_u32(np, "id-reg", &desc->panel_id_reg);
+		of_property_read_u8_array(np, "id", desc->panel_id, 
+					  ARRAY_SIZE(desc->panel_id));		
+	}
+
 	return 0;
 }
 
@@ -3400,6 +3433,8 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 	struct panel_desc_dsi *d;
 	const struct of_device_id *id;
 	int err;
+
+	dev_info(dev, "panel_simple_dsi_probe()\n");
 
 	id = of_match_node(dsi_of_match, dsi->dev.of_node);
 	if (!id)
