@@ -678,9 +678,10 @@ static int panel_simple_get_timings(struct drm_panel *panel,
 				    unsigned int num_timings,
 				    struct display_timing *timings)
 {
-	dev_info(panel->dev, "panel_simple_get_timings");
 	struct panel_simple *p = to_panel_simple(panel);
 	unsigned int i;
+
+	dev_info(panel->dev, "panel_simple_get_timings");
 
 	if (p->desc->num_timings < num_timings)
 		num_timings = p->desc->num_timings;
