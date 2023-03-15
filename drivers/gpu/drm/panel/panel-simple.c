@@ -826,7 +826,7 @@ static int panel_simple_probe(struct device *dev, const struct panel_desc *desc)
 	panel->base.dev = dev;
 	panel->base.funcs = &panel_simple_funcs;
 
-	if (panel->cmd_type == CMD_TYPE_DEFAULT) {
+	if (panel->cmd_type != CMD_TYPE_DEFAULT) {
 		err = drm_panel_add(&panel->base);
 		if (err < 0)
 			goto free_ddc;
