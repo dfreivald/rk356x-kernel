@@ -681,7 +681,7 @@ static int panel_simple_get_timings(struct drm_panel *panel,
 	struct panel_simple *p = to_panel_simple(panel);
 	unsigned int i;
 
-	dev_info(panel->dev, "panel_simple_get_timings");
+	dev_info(panel->dev, "panel_simple_get_timings()\n");
 
 	if (p->desc->num_timings < num_timings)
 		num_timings = p->desc->num_timings;
@@ -710,7 +710,7 @@ static int panel_simple_probe(struct device *dev, const struct panel_desc *desc)
 	const char *cmd_type;
 	int err;
 
-	dev_info(dev, "panel_simple_probe()");
+	dev_info(dev, "panel_simple_probe()\n");
 
 	panel = devm_kzalloc(dev, sizeof(*panel), GFP_KERNEL);
 	if (!panel)
@@ -827,11 +827,11 @@ static int panel_simple_probe(struct device *dev, const struct panel_desc *desc)
 	panel->base.dev = dev;
 	panel->base.funcs = &panel_simple_funcs;
 
-	if (panel->cmd_type != CMD_TYPE_DEFAULT) {
+	//if (panel->cmd_type != CMD_TYPE_DEFAULT) {
 		err = drm_panel_add(&panel->base);
 		if (err < 0)
 			goto free_ddc;
-	}
+	//}
 
 	dev_set_drvdata(dev, panel);
 
@@ -3485,20 +3485,20 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 	dsi->lanes = desc->lanes;
 
 	err = mipi_dsi_attach(dsi);
-	if (err)
-		return err;
+	//if (err)
+	//	return err;
 
-	err = panel_simple_prepare(&panel->base);
-	if (err)
-		return err;
+	//err = panel_simple_prepare(&panel->base);
+	//if (err)
+	//	return err;
 
-	err = drm_panel_add(&panel->base);
+	//err = drm_panel_add(&panel->base);
 	
-	//if (err) {
-	//	struct panel_simple *panel = dev_get_drvdata(&dsi->dev);
+	if (err) {
+		struct panel_simple *panel = dev_get_drvdata(&dsi->dev);
 
-	//	drm_panel_remove(&panel->base);
-	//}	
+		drm_panel_remove(&panel->base);
+	}	
 
 	return err;
 }
