@@ -3488,7 +3488,7 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 	struct device_node *node;
 	int err;
 
-	dev_info(dev, "panel_simple_dsi_probe()\n";
+	dev_info(dev, "panel_simple_dsi_probe()\n");
 
 	id = of_match_node(dsi_of_match, dsi->dev.of_node);
 	if (!id)
