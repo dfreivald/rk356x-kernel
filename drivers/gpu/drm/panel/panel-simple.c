@@ -117,6 +117,8 @@ struct panel_simple {
 	bool enabled;
 	bool power_invert;
 
+	bool panel_found;
+	u8 panel_id[2];
 	const struct panel_desc *desc;
 
 	struct backlight_device *backlight;
@@ -600,12 +602,17 @@ static int panel_simple_prepare(struct drm_panel *panel)
 	if (p->desc->delay.init)
 		panel_simple_sleep(p->desc->delay.init);
 
-	if (p->desc->read_id_seq && p->dsi) {
-		u8 id[2];
-		panel_simple_xfer_dsi_cmd_seq(p, p->desc->read_id_seq);
-		mipi_dsi_set_maximum_return_packet_size(p->dsi, ARRAY_SIZE(id));
-		mipi_dsi_generic_read(p->dsi, &p->desc->panel_id_reg, 1, id, ARRAY_SIZE(id));
-		dev_info(panel->dev, "PANEL ID: %02x %02x", id[0], id[1]);
+	if (!p->panel_found && p->dsi && p->desc->read_id_seq) {
+		panel_simple_dsi_read_id(p);
+
+		if (p->panel_id[0] == p->desc->panel_id[0] && 
+		    p->panel_id[1] == p->desc->panel_id[1]) {
+			p->panel_found = true;
+			dev_info(panel->dev, "V1 panel already loaded.");
+		}
+		//else {
+			panel_simple_dsi_of_get_desc_data_by_id(p);
+		//}
 	}
 
 	if (p->desc->init_seq) {
@@ -3446,6 +3453,29 @@ static int panel_simple_dsi_of_get_desc_data(struct device *dev,
 		desc->lanes = val;
 
 	return 0;
+}
+
+static void panel_simple_dsi_read_id(struct panel_simple *panel)
+{
+	panel_simple_xfer_dsi_cmd_seq(panel, panel->desc->read_id_seq);
+	mipi_dsi_set_maximum_return_packet_size(panel->dsi, 
+						ARRAY_SIZE(panel->panel_id));
+	mipi_dsi_generic_read(panel->dsi, &panel->desc->panel_id_reg, 1, 
+			      panel->panel_id, ARRAY_SIZE(panel->panel_id));
+	dev_info(panel->dev, "PANEL ID: %02x %02x", 
+		 panel->panel_id[0], panel->panel_id[1]);
+}
+
+static void panel_simple_dsi_of_get_desc_data_by_id(struct panel_simple *panel)
+{
+	const struct device_node *host_node = panel->dsi->host->dev->of_node;
+	int panel_count;
+
+	if (panel->panel_id[0] == 0 && panel->panel_id[1] == 0)
+		return;
+
+	panel_count = of_get_child_count(host_node);
+	dev_info(panel->dev, "panel_count: %d\n");	
 }
 
 static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
