@@ -117,10 +117,6 @@ struct panel_simple {
 	bool enabled;
 	bool power_invert;
 
-	u8 panel_id[2];
-	int panel_number;
-	int panel_count;
-	const struct panel_desc **multi_panel;
 	const struct panel_desc *desc;
 
 	struct backlight_device *backlight;
@@ -219,6 +215,8 @@ static int panel_simple_parse_cmd_seq(struct device *dev,
 		return -EINVAL;
 
 	seq->cmd_cnt = cnt;
+	if (seq->cmds)
+		devm_kfree(dev, seq->cmds);
 	seq->cmds = devm_kcalloc(dev, cnt, sizeof(*desc), GFP_KERNEL);
 	if (!seq->cmds)
 		return -ENOMEM;
@@ -577,10 +575,10 @@ static int panel_simple_prepare(struct drm_panel *panel)
 {
 	struct panel_simple *p = to_panel_simple(panel);
 	int err;
-
+	dev_info(panel->dev, "panel_simple_prepare()\n");
 	if (p->prepared)
 		return 0;
-	dev_info(panel->dev, "panel_simple_prepare()\n");
+
 	err = panel_simple_regulator_enable(p);
 	if (err < 0) {
 		dev_err(panel->dev, "failed to enable supply: %d\n", err);
@@ -3106,16 +3104,21 @@ static const struct of_device_id platform_of_match[] = {
 MODULE_DEVICE_TABLE(of, platform_of_match);
 
 static int panel_simple_of_get_desc_data(struct device *dev,
+					 struct device_node *np,
 					 struct panel_desc *desc)
 {
-	struct device_node *np = dev->of_node;
+	//struct device_node *np = dev->of_node;
 	struct drm_display_mode *mode;
 	u32 bus_flags;
 	const void *data;
 	int len;
 	int err;
 
-	mode = devm_kzalloc(dev, sizeof(*mode), GFP_KERNEL);
+	if (desc->modes) 
+		mode = desc->modes;
+	else 
+		mode = devm_kzalloc(dev, sizeof(*mode), GFP_KERNEL);
+	
 	if (!mode)
 		return -ENOMEM;
 
@@ -3140,8 +3143,9 @@ static int panel_simple_of_get_desc_data(struct device *dev,
 
 	data = of_get_property(np, "panel-init-sequence", &len);
 	if (data) {
-		desc->init_seq = devm_kzalloc(dev, sizeof(*desc->init_seq),
-					      GFP_KERNEL);
+		if (!desc->init_seq)
+			desc->init_seq = devm_kzalloc(dev, sizeof(*desc->init_seq),
+						      GFP_KERNEL);
 		if (!desc->init_seq)
 			return -ENOMEM;
 
@@ -3155,8 +3159,9 @@ static int panel_simple_of_get_desc_data(struct device *dev,
 
 	data = of_get_property(np, "panel-exit-sequence", &len);
 	if (data) {
-		desc->exit_seq = devm_kzalloc(dev, sizeof(*desc->exit_seq),
-					      GFP_KERNEL);
+		if (!desc->exit_seq)
+			desc->exit_seq = devm_kzalloc(dev, sizeof(*desc->exit_seq),
+						      GFP_KERNEL);
 		if (!desc->exit_seq)
 			return -ENOMEM;
 
@@ -3170,8 +3175,9 @@ static int panel_simple_of_get_desc_data(struct device *dev,
 
 	data = of_get_property(np, "panel-read-id-sequence", &len);
 	if (data) {
-		desc->read_id_seq = devm_kzalloc(dev, sizeof(*desc->read_id_seq),
-					         GFP_KERNEL);
+		if (!desc->read_id_seq)
+			desc->read_id_seq = devm_kzalloc(dev, sizeof(*desc->read_id_seq),
+						         GFP_KERNEL);
 		if (!desc->read_id_seq)
 			return -ENOMEM;
 
@@ -3199,6 +3205,8 @@ static int panel_simple_platform_probe(struct platform_device *pdev)
 	struct panel_desc *d;
 	int err;
 
+	dev_info(dev, "panel_simple_platform_probe!!!!\n");
+
 	id = of_match_node(platform_of_match, pdev->dev.of_node);
 	if (!id)
 		return -ENODEV;
@@ -3208,7 +3216,7 @@ static int panel_simple_platform_probe(struct platform_device *pdev)
 		if (!d)
 			return -ENOMEM;
 
-		err = panel_simple_of_get_desc_data(dev, d);
+		err = panel_simple_of_get_desc_data(dev, dev->of_node, d);
 		if (err) {
 			dev_err(dev, "failed to get desc data: %d\n", err);
 			return err;
@@ -3419,13 +3427,14 @@ static const struct of_device_id dsi_of_match[] = {
 MODULE_DEVICE_TABLE(of, dsi_of_match);
 
 static int panel_simple_dsi_of_get_desc_data(struct device *dev,
+					     struct device_node *np,
 					     struct panel_desc_dsi *desc)
 {
-	struct device_node *np = dev->of_node;
+	//struct device_node *np = dev->of_node;
 	u32 val;
 	int err;
 
-	err = panel_simple_of_get_desc_data(dev, &desc->desc);
+	err = panel_simple_of_get_desc_data(dev, np, &desc->desc);
 	if (err)
 		return err;
 
@@ -3446,9 +3455,10 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 	const struct panel_desc_dsi *desc;
 	struct panel_desc_dsi *d;
 	const struct of_device_id *id;
+	struct device_node *node;
 	int err;
 
-	dev_info(dev, "panel_simple_dsi_probe()\n");
+	dev_info(dev, "panel_simple_dsi_probe()\n";
 
 	id = of_match_node(dsi_of_match, dsi->dev.of_node);
 	if (!id)
@@ -3459,7 +3469,7 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 		if (!d)
 			return -ENOMEM;
 
-		err = panel_simple_dsi_of_get_desc_data(dev, d);
+		err = panel_simple_dsi_of_get_desc_data(dev, dev->of_node, d);
 		if (err) {
 			dev_err(dev, "failed to get desc data: %d\n", err);
 			return err;
@@ -3495,6 +3505,7 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 	//err = drm_panel_add(&panel->base);
 	
 	if (err) {
+		dev_err(dev, "mipi_dsi_attach: %d\n", err);
 		struct panel_simple *panel = dev_get_drvdata(&dsi->dev);
 
 		drm_panel_remove(&panel->base);
