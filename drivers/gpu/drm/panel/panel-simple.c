@@ -392,7 +392,7 @@ static void panel_simple_dsi_read_id(struct panel_simple *panel)
 						ARRAY_SIZE(panel->panel_id));
 	mipi_dsi_generic_read(panel->dsi, &panel->desc->panel_id_reg, 1, 
 			      panel->panel_id, ARRAY_SIZE(panel->panel_id));
-	dev_info(panel->base->dev, "PANEL ID: %02x %02x", 
+	dev_info(panel->base.dev, "PANEL ID: %02x %02x", 
 		 panel->panel_id[0], panel->panel_id[1]);
 }
 
@@ -3135,7 +3135,7 @@ static int panel_simple_of_get_desc_data(struct device *dev,
 	int err;
 
 	if (desc->modes) 
-		mode = (drm_display_mode *)desc->modes;
+		mode = (struct drm_display_mode *)desc->modes;
 	else 
 		mode = devm_kzalloc(dev, sizeof(*mode), GFP_KERNEL);
 	
@@ -3477,7 +3477,7 @@ static void panel_simple_dsi_of_get_desc_data_by_id(struct panel_simple *panel)
 		return;
 
 	panel_count = of_get_child_count(host_node);
-	dev_info(panel->dsi->dev, "panel_count: %d\n");	
+	dev_info(panel->base.dev, "panel_count: %d\n", panel_count);	
 }
 
 static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
@@ -3537,9 +3537,8 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 	//err = drm_panel_add(&panel->base);
 	
 	if (err) {
-		dev_err(dev, "mipi_dsi_attach: %d\n", err);
 		struct panel_simple *panel = dev_get_drvdata(&dsi->dev);
-
+		dev_err(dev, "mipi_dsi_attach error: %08x\n", err);
 		drm_panel_remove(&panel->base);
 	}	
 
