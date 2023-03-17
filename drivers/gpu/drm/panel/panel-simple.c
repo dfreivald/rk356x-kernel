@@ -385,6 +385,19 @@ static inline int panel_simple_xfer_dsi_cmd_seq(struct panel_simple *panel,
 }
 #endif
 
+static void panel_simple_dsi_read_id(struct panel_simple *panel)
+{
+	panel_simple_xfer_dsi_cmd_seq(panel, panel->desc->read_id_seq);
+	mipi_dsi_set_maximum_return_packet_size(panel->dsi, 
+						ARRAY_SIZE(panel->panel_id));
+	mipi_dsi_generic_read(panel->dsi, &panel->desc->panel_id_reg, 1, 
+			      panel->panel_id, ARRAY_SIZE(panel->panel_id));
+	dev_info(panel->base->dev, "PANEL ID: %02x %02x", 
+		 panel->panel_id[0], panel->panel_id[1]);
+}
+
+static void panel_simple_dsi_of_get_desc_data_by_id(struct panel_simple *panel);
+
 static int panel_simple_get_fixed_modes(struct panel_simple *panel)
 {
 	struct drm_connector *connector = panel->base.connector;
@@ -3122,7 +3135,7 @@ static int panel_simple_of_get_desc_data(struct device *dev,
 	int err;
 
 	if (desc->modes) 
-		mode = desc->modes;
+		mode = (drm_display_mode *)desc->modes;
 	else 
 		mode = devm_kzalloc(dev, sizeof(*mode), GFP_KERNEL);
 	
@@ -3455,17 +3468,6 @@ static int panel_simple_dsi_of_get_desc_data(struct device *dev,
 	return 0;
 }
 
-static void panel_simple_dsi_read_id(struct panel_simple *panel)
-{
-	panel_simple_xfer_dsi_cmd_seq(panel, panel->desc->read_id_seq);
-	mipi_dsi_set_maximum_return_packet_size(panel->dsi, 
-						ARRAY_SIZE(panel->panel_id));
-	mipi_dsi_generic_read(panel->dsi, &panel->desc->panel_id_reg, 1, 
-			      panel->panel_id, ARRAY_SIZE(panel->panel_id));
-	dev_info(panel->dev, "PANEL ID: %02x %02x", 
-		 panel->panel_id[0], panel->panel_id[1]);
-}
-
 static void panel_simple_dsi_of_get_desc_data_by_id(struct panel_simple *panel)
 {
 	const struct device_node *host_node = panel->dsi->host->dev->of_node;
@@ -3475,7 +3477,7 @@ static void panel_simple_dsi_of_get_desc_data_by_id(struct panel_simple *panel)
 		return;
 
 	panel_count = of_get_child_count(host_node);
-	dev_info(panel->dev, "panel_count: %d\n");	
+	dev_info(panel->dsi->dev, "panel_count: %d\n");	
 }
 
 static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
@@ -3485,7 +3487,7 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 	const struct panel_desc_dsi *desc;
 	struct panel_desc_dsi *d;
 	const struct of_device_id *id;
-	struct device_node *node;
+	//struct device_node *node;
 	int err;
 
 	dev_info(dev, "panel_simple_dsi_probe()\n");
