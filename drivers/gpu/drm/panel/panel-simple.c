@@ -3471,13 +3471,28 @@ static int panel_simple_dsi_of_get_desc_data(struct device *dev,
 static void panel_simple_dsi_of_get_desc_data_by_id(struct panel_simple *panel)
 {
 	const struct device_node *host_node = panel->dsi->host->dev->of_node;
-	int panel_count;
+	struct device *dev = &panel->dsi->dev;
+	struct device_node *node;
+	u8 id[2];
 
 	if (panel->panel_id[0] == 0 && panel->panel_id[1] == 0)
 		return;
+	
+	for_each_available_child_of_node(host_node, node) {
+		/* skip nodes without a panel num */
+		if (!of_find_property(node, "num", NULL))
+			continue;
+		
+		of_property_read_u8_array(node, "id", id, ARRAY_SIZE(id));
 
-	panel_count = of_get_child_count(host_node);
-	dev_info(panel->base.dev, "panel_count: %d\n", panel_count);	
+		if (id[0] == panel->panel_id[0] && 
+		    id[1] == panel->panel_id[1]) {
+			panel->panel_found = true;
+
+			panel_simple_of_get_desc_data(dev, node, panel->desc);
+		}
+	}
+
 }
 
 static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
