@@ -619,13 +619,10 @@ static int panel_simple_prepare(struct drm_panel *panel)
 		panel_simple_dsi_read_id(p);
 
 		if (p->panel_id[0] == p->desc->panel_id[0] && 
-		    p->panel_id[1] == p->desc->panel_id[1]) {
+		    p->panel_id[1] == p->desc->panel_id[1])
 			p->panel_found = true;
-			dev_info(panel->dev, "V1 panel already loaded.");
-		}
-		//else {
+		else
 			panel_simple_dsi_of_get_desc_data_by_id(p);
-		//}
 	}
 
 	if (p->desc->init_seq) {
@@ -3471,6 +3468,7 @@ static int panel_simple_dsi_of_get_desc_data(struct device *dev,
 static void panel_simple_dsi_of_get_desc_data_by_id(struct panel_simple *panel)
 {
 	const struct device_node *host_node = panel->dsi->host->dev->of_node;
+	struct panel_desc *desc = (struct panel_desc *)panel->desc;
 	struct device *dev = &panel->dsi->dev;
 	struct device_node *node;
 	u8 id[2];
@@ -3489,10 +3487,9 @@ static void panel_simple_dsi_of_get_desc_data_by_id(struct panel_simple *panel)
 		    id[1] == panel->panel_id[1]) {
 			panel->panel_found = true;
 
-			panel_simple_of_get_desc_data(dev, node, panel->desc);
+			panel_simple_of_get_desc_data(dev, node, desc);
 		}
 	}
-
 }
 
 static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
