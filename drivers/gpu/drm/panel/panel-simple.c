@@ -3120,15 +3120,42 @@ static const struct of_device_id platform_of_match[] = {
 };
 MODULE_DEVICE_TABLE(of, platform_of_match);
 
+static int panel_simple_of_get_cmd_seq(struct device *dev,
+				       struct device_node *np,
+				       const char *propname,
+				       struct panel_cmd_seq **cmd_seq)
+{
+	struct panel_cmd_seq *seq = *cmd_seq;
+	const void *data;
+	int len;
+	int err;
+
+	data = of_get_property(np, propname, &len);
+	if (data) {
+		if (!seq)
+			seq = devm_kzalloc(dev, sizeof(*seq),
+						      GFP_KERNEL);
+		if (!seq)
+			return -ENOMEM;
+
+		err = panel_simple_parse_cmd_seq(dev, data, len, seq);
+		if (err) {
+			dev_err(dev, "failed to parse %s\n", propname);
+			return err;
+		}
+
+		*cmd_seq = seq;
+	}
+
+	return 0;
+}
+
 static int panel_simple_of_get_desc_data(struct device *dev,
 					 struct device_node *np,
 					 struct panel_desc *desc)
 {
-	//struct device_node *np = dev->of_node;
 	struct drm_display_mode *mode;
 	u32 bus_flags;
-	const void *data;
-	int len;
 	int err;
 
 	if (desc->modes) 
@@ -3158,58 +3185,25 @@ static int panel_simple_of_get_desc_data(struct device *dev,
 	of_property_read_u32(np, "reset-delay-ms", &desc->delay.reset);
 	of_property_read_u32(np, "init-delay-ms", &desc->delay.init);
 
-	data = of_get_property(np, "panel-init-sequence", &len);
-	if (data) {
-		if (!desc->init_seq)
-			desc->init_seq = devm_kzalloc(dev, sizeof(*desc->init_seq),
-						      GFP_KERNEL);
-		if (!desc->init_seq)
-			return -ENOMEM;
+	of_property_read_u32(np, "num", &desc->panel_number);
+	of_property_read_u32(np, "id-reg", &desc->panel_id_reg);
+	of_property_read_u8_array(np, "id", desc->panel_id, 
+				  ARRAY_SIZE(desc->panel_id));		
 
-		err = panel_simple_parse_cmd_seq(dev, data, len,
-						 desc->init_seq);
-		if (err) {
-			dev_err(dev, "failed to parse init sequence\n");
-			return err;
-		}
-	}
+	err = panel_simple_of_get_cmd_seq(dev, np, "panel-init-sequence", 
+					  &desc->init_seq);
+	if (err)
+		return err;
 
-	data = of_get_property(np, "panel-exit-sequence", &len);
-	if (data) {
-		if (!desc->exit_seq)
-			desc->exit_seq = devm_kzalloc(dev, sizeof(*desc->exit_seq),
-						      GFP_KERNEL);
-		if (!desc->exit_seq)
-			return -ENOMEM;
-
-		err = panel_simple_parse_cmd_seq(dev, data, len,
-						 desc->exit_seq);
-		if (err) {
-			dev_err(dev, "failed to parse exit sequence\n");
-			return err;
-		}
-	}
-
-	data = of_get_property(np, "panel-read-id-sequence", &len);
-	if (data) {
-		if (!desc->read_id_seq)
-			desc->read_id_seq = devm_kzalloc(dev, sizeof(*desc->read_id_seq),
-						         GFP_KERNEL);
-		if (!desc->read_id_seq)
-			return -ENOMEM;
-
-		err = panel_simple_parse_cmd_seq(dev, data, len,
-						 desc->read_id_seq);
-		if (err) {
-			dev_err(dev, "failed to parse panel-read-id-sequence\n");
-			return err;
-		}
-
-		of_property_read_u32(np, "num", &desc->panel_number);
-		of_property_read_u32(np, "id-reg", &desc->panel_id_reg);
-		of_property_read_u8_array(np, "id", desc->panel_id, 
-					  ARRAY_SIZE(desc->panel_id));		
-	}
+	err = panel_simple_of_get_cmd_seq(dev, np, "panel-exit-sequence", 
+					  &desc->exit_seq);
+	if (err)
+		return err;
+	
+	err = panel_simple_of_get_cmd_seq(dev, np, "panel-read-id-sequence", 
+					  &desc->read_id_seq);
+	if (err)
+		return err;
 
 	return 0;
 }
