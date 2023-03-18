@@ -525,15 +525,15 @@
 		disp_timings0: display-timings {
 			native-mode = <&dsi0_timing0>;
 			dsi0_timing0: timing0 {
-				clock-frequency = <24150000>;
+				clock-frequency = <27000000>;
 				hactive = <640>;
 				vactive = <480>;
-				hfront-porch = <40>;
+				hfront-porch = <131>;
 				hsync-len = <2>;
-				hback-porch = <80>;
-				vfront-porch = <18>;
+				hback-porch = <127>;
+				vfront-porch = <13>;
 				vsync-len = <2>;
-				vback-porch = <28>;
+				vback-porch = <5>;
 				hsync-active = <0>;
 				vsync-active = <0>;
 				de-active = <0>;
@@ -621,15 +621,15 @@
 		disp_timings1: display-timings {
 			native-mode = <&dsi0_timing1>;
 			dsi0_timing1: timing1 {
-				clock-frequency = <24150000>;
+				clock-frequency = <50000000>;
 				hactive = <640>;
 				vactive = <480>;
-				hfront-porch = <40>;
-				hsync-len = <2>;
-				hback-porch = <80>;
-				vfront-porch = <18>;
-				vsync-len = <2>;
-				vback-porch = <28>;
+				hfront-porch = <450>;
+				hback-porch = <450>;
+				hsync-len = <70>;
+				vfront-porch = <17>;
+				vsync-len = <5>;
+				vback-porch = <13>;
 				hsync-active = <0>;
 				vsync-active = <0>;
 				de-active = <0>;
