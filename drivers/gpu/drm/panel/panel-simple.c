@@ -626,8 +626,9 @@ static int panel_simple_prepare(struct drm_panel *panel)
 	}
 
 	if (p->desc->init_seq) {
+		dev_info(panel->dev, "writing panel init sequence.\n");
 		if (p->dsi)
-			panel_simple_xfer_dsi_cmd_seq(p, p->desc->init_seq);
+			err = panel_simple_xfer_dsi_cmd_seq(p, p->desc->init_seq);
 		else if (p->cmd_type == CMD_TYPE_SPI)
 			err = panel_simple_xfer_spi_cmd_seq(p, p->desc->init_seq);
 		if (err)
@@ -3158,6 +3159,8 @@ static int panel_simple_of_get_desc_data(struct device *dev,
 	u32 bus_flags;
 	int err;
 
+	dev_info(dev, "panel_simple_of_get_desc_data(): loading panel data from dt.\n");
+
 	if (desc->modes) 
 		mode = (struct drm_display_mode *)desc->modes;
 	else 
@@ -3204,6 +3207,9 @@ static int panel_simple_of_get_desc_data(struct device *dev,
 					  &desc->read_id_seq);
 	if (err)
 		return err;
+
+	dev_info(dev, "data loaded for panel #%d [%02x %02x]\n", 
+		 desc->panel_number, desc->panel_id[0], desc->panel_id[1]);
 
 	return 0;
 }
@@ -3467,6 +3473,8 @@ static void panel_simple_dsi_of_get_desc_data_by_id(struct panel_simple *panel)
 	struct device_node *node;
 	u8 id[2];
 
+	dev_info(dev, "wrong panel. looking up another panel in dt\n");
+
 	if (panel->panel_id[0] == 0 && panel->panel_id[1] == 0)
 		return;
 	
@@ -3480,7 +3488,7 @@ static void panel_simple_dsi_of_get_desc_data_by_id(struct panel_simple *panel)
 		if (id[0] == panel->panel_id[0] && 
 		    id[1] == panel->panel_id[1]) {
 			panel->panel_found = true;
-
+			dev_info(dev, "panel found in dt.\n");
 			panel_simple_of_get_desc_data(dev, node, desc);
 		}
 	}
