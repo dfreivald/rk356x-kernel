@@ -3464,7 +3464,7 @@ static void panel_simple_dsi_reload_desc(struct panel_simple *panel)
 	struct device_node *np;
 	u8 id[2] = {0, 0};
 
-	dev_info(panel->dev,"panel_simple_dsi_reload_desc()");
+	dev_info(dev,"panel_simple_dsi_reload_desc()");
 	if (!panel->panel_id[0] && !panel->panel_id[1])
 		return;
 	//if (memcmp(panel->panel_id, id, ARRAY_SIZE(id)) == 0)
@@ -3488,7 +3488,7 @@ static void panel_simple_dsi_reload_desc(struct panel_simple *panel)
 		if (panel->panel_id[0] == id[0] &&
 	    	    panel->panel_id[1] == id[1]) {
 			panel->panel_found = true;
-			dev_info(panel->dev,"panel_simple_dsi_reload_desc() - panel found");
+			dev_info(dev,"panel_simple_dsi_reload_desc() - panel found");
 			panel_simple_of_get_desc_data(dev, np, desc);
 		}
 	}
