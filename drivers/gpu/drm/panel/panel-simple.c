@@ -376,14 +376,6 @@ static int panel_simple_xfer_dsi_cmd_seq(struct panel_simple *panel,
 
 	return 0;
 }
-#else
-static inline int panel_simple_xfer_dsi_cmd_seq(struct panel_simple *panel,
-						struct panel_cmd_seq *seq)
-{
-	return -EINVAL;
-}
-#endif
-
 static void panel_simple_dsi_read_panel_id(struct panel_simple *panel)
 {
 	/* 
@@ -392,7 +384,8 @@ static void panel_simple_dsi_read_panel_id(struct panel_simple *panel)
 	 * The read id command sequence, and id register were found 
 	 * in Anbernic's updated device trees.
 	 * Both panels use the same register and read id sequence.
-	 * This must be called after a panel reset.
+	 * This must be called after a panel reset, and before the 
+	 * init sequence.
 	 */
 	panel_simple_xfer_dsi_cmd_seq(panel, panel->desc->read_id_seq);
 
@@ -409,6 +402,18 @@ static void panel_simple_dsi_read_panel_id(struct panel_simple *panel)
 	dev_info(panel->base.dev, "panel id: %02x %02x", 
 		 panel->panel_id[0], panel->panel_id[1]);
 }
+#else
+static inline void panel_simple_dsi_read_panel_id(struct panel_simple *panel)
+{
+	return;
+}
+static inline int panel_simple_xfer_dsi_cmd_seq(struct panel_simple *panel,
+						struct panel_cmd_seq *seq)
+{
+	return -EINVAL;
+}
+#endif
+
 
 static int panel_simple_get_fixed_modes(struct panel_simple *panel)
 {
@@ -612,7 +617,6 @@ static int panel_simple_prepare(struct drm_panel *panel)
 	}
 
 	gpiod_direction_output(p->enable_gpio, 1);
-	/* V1 prepare delay was upped 20ms to accommodate V2 panels */
 	panel_simple_sleep(p->desc->delay.prepare); 
 	gpiod_direction_output(p->reset_gpio, 1);
 	panel_simple_sleep(p->desc->delay.reset);
