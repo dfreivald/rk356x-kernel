@@ -379,7 +379,7 @@ static int panel_simple_xfer_dsi_cmd_seq(struct panel_simple *panel,
 }
 static void panel_simple_dsi_read_panel_id(struct panel_simple *panel)
 {
-	/* 
+	/*
 	 * To support Anbernic's multiple 3.5" display revisions a 
 	 * panel id must be read from the lcd controller. 
 	 * The read id command sequence, and id register were found 
@@ -396,7 +396,7 @@ static void panel_simple_dsi_read_panel_id(struct panel_simple *panel)
 
 	mipi_dsi_generic_read(panel->dsi, &panel->desc->id_reg, 1, 
 			      panel->panel_id, ARRAY_SIZE(panel->panel_id));
-	/* 
+	/*
 	 * V1 panel id is [30 52]
 	 * V2 panel id is [38 21]
 	 */
@@ -845,11 +845,9 @@ static int panel_simple_probe(struct device *dev, const struct panel_desc *desc)
 	panel->base.dev = dev;
 	panel->base.funcs = &panel_simple_funcs;
 
-	//if (panel->cmd_type != CMD_TYPE_DEFAULT) {
-		err = drm_panel_add(&panel->base);
-		if (err < 0)
-			goto free_ddc;
-	//}
+	err = drm_panel_add(&panel->base);
+	if (err < 0)
+		goto free_ddc;
 
 	dev_set_drvdata(dev, panel);
 
@@ -3460,7 +3458,7 @@ static int panel_simple_dsi_of_get_desc_data(struct device *dev,
 	return 0;
 }
 
-/**
+/*
  * Added to support Anbernic's V2 panel revision.
  * Once the panel has been identified, we can search the device tree 
  * and reload the correct panel description.
