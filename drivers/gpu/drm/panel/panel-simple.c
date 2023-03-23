@@ -403,17 +403,16 @@ static void panel_simple_dsi_read_panel_id(struct panel_simple *panel)
 		 panel->panel_id[0], panel->panel_id[1]);
 }
 #else
-static inline void panel_simple_dsi_read_panel_id(struct panel_simple *panel)
-{
-	return;
-}
 static inline int panel_simple_xfer_dsi_cmd_seq(struct panel_simple *panel,
 						struct panel_cmd_seq *seq)
 {
 	return -EINVAL;
 }
+static inline void panel_simple_dsi_read_panel_id(struct panel_simple *panel)
+{
+	return;
+}
 #endif
-
 
 static int panel_simple_get_fixed_modes(struct panel_simple *panel)
 {
@@ -630,7 +629,6 @@ static int panel_simple_prepare(struct drm_panel *panel)
 
 	if (p->desc->read_id_seq && !p->panel_found) {
 		if (p->dsi) {
-			dev_info(panel->dev, "reading panel id");
 			panel_simple_dsi_read_panel_id(p);
 			panel_simple_dsi_reload_desc(p);
 		}
@@ -3206,10 +3204,10 @@ static int panel_simple_of_get_desc_data(struct device *dev,
 	of_property_read_u32(np, "num", &desc->panel_number);
 	
 	err = panel_simple_of_get_cmd_seq(dev, np, "panel-read-id-sequence", 
-					&desc->read_id_seq);
+					  &desc->read_id_seq);
 	if (err)
 		return err;
-	
+
 	return 0;
 }
 
@@ -3461,7 +3459,7 @@ static int panel_simple_dsi_of_get_desc_data(struct device *dev,
 	return 0;
 }
 
-/*
+/**
  * Added to support Anbernic's V2 panel revision.
  * Once the panel has been identified, we can search the device tree 
  * and reload the correct panel description.
@@ -3548,7 +3546,7 @@ static int panel_simple_dsi_probe(struct mipi_dsi_device *dsi)
 		struct panel_simple *panel = dev_get_drvdata(&dsi->dev);
 
 		drm_panel_remove(&panel->base);
-	}	
+	}
 
 	return err;
 }
