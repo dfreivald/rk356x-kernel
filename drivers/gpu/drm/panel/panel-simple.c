@@ -606,7 +606,7 @@ static int panel_simple_prepare(struct drm_panel *panel)
 {
 	struct panel_simple *p = to_panel_simple(panel);
 	int err;
-	dev_info(panel->dev, "panel_simple_prepare");
+
 	if (p->prepared)
 		return 0;
 
@@ -3473,14 +3473,10 @@ static void panel_simple_dsi_reload_desc(struct panel_simple *panel)
 	struct device_node *np;
 	u8 id[2] = {0, 0};
 
-	dev_info(dev,"panel_simple_dsi_reload_desc()");
 	if (memcmp(panel->panel_id, id, ARRAY_SIZE(id)) == 0)
-	//if (!panel->panel_id[0] && !panel->panel_id[1])
 		return;
 
 	if (memcmp(panel->panel_id, desc->id, ARRAY_SIZE(desc->id)) == 0) {
-	//if (panel->panel_id[0] == desc->id[0] &&
-	//    panel->panel_id[1] == desc->id[1]) {
 		panel->panel_found = true;
 		return;
 	}
@@ -3493,10 +3489,7 @@ static void panel_simple_dsi_reload_desc(struct panel_simple *panel)
 		of_property_read_u8_array(np, "id", id, ARRAY_SIZE(id));
 
  		if (memcmp(panel->panel_id, id, ARRAY_SIZE(id)) == 0) {
-		//if (panel->panel_id[0] == id[0] &&
-	    	//    panel->panel_id[1] == id[1]) {
 			panel->panel_found = true;
-			dev_info(dev,"panel found.\n");
 			panel_simple_of_get_desc_data(dev, np, desc);
 		}
 	}
