@@ -617,10 +617,15 @@ static int panel_simple_prepare(struct drm_panel *panel)
 	}
 
 	gpiod_direction_output(p->enable_gpio, 1);
+
 	panel_simple_sleep(p->desc->delay.prepare); 
+	
 	gpiod_direction_output(p->reset_gpio, 1);
+	
 	panel_simple_sleep(p->desc->delay.reset);
+	
 	gpiod_direction_output(p->reset_gpio, 0);
+	
 	panel_simple_sleep(p->desc->delay.init);
 
 	if (p->desc->read_id_seq && !p->panel_found) {
@@ -3183,10 +3188,6 @@ static int panel_simple_of_get_desc_data(struct device *dev,
 	of_property_read_u32(np, "reset-delay-ms", &desc->delay.reset);
 	of_property_read_u32(np, "init-delay-ms", &desc->delay.init);
 
-	of_property_read_u8_array(np, "id", desc->id, ARRAY_SIZE(desc->id));
-	of_property_read_u32(np, "id-reg", &desc->id_reg);
-	of_property_read_u32(np, "num", &desc->panel_number);
-
 	err = panel_simple_of_get_cmd_seq(dev, np, "panel-init-sequence", 
 					  &desc->init_seq);
 	if (err)
@@ -3197,11 +3198,18 @@ static int panel_simple_of_get_desc_data(struct device *dev,
 	if (err)
 		return err;
 	
+	if (!of_find_property(np, "id", NULL))
+		return 0;
+
+	of_property_read_u8_array(np, "id", desc->id, ARRAY_SIZE(desc->id));
+	of_property_read_u32(np, "id-reg", &desc->id_reg);
+	of_property_read_u32(np, "num", &desc->panel_number);
+	
 	err = panel_simple_of_get_cmd_seq(dev, np, "panel-read-id-sequence", 
-					  &desc->read_id_seq);
+					&desc->read_id_seq);
 	if (err)
 		return err;
-
+	
 	return 0;
 }
 
@@ -3469,10 +3477,9 @@ static void panel_simple_dsi_reload_desc(struct panel_simple *panel)
 	u8 id[2] = {0, 0};
 
 	dev_info(dev,"panel_simple_dsi_reload_desc()");
+	//if (memcmp(panel->panel_id, id, ARRAY_SIZE(id)) == 0)
 	if (!panel->panel_id[0] && !panel->panel_id[1])
 		return;
-	//if (memcmp(panel->panel_id, id, ARRAY_SIZE(id)) == 0)
-	//	return;
 
 	//if (memcmp(panel->panel_id, desc->id, ARRAY_SIZE(desc->id)) == 0) {
 	if (panel->panel_id[0] == desc->id[0] &&
@@ -3492,7 +3499,7 @@ static void panel_simple_dsi_reload_desc(struct panel_simple *panel)
 		if (panel->panel_id[0] == id[0] &&
 	    	    panel->panel_id[1] == id[1]) {
 			panel->panel_found = true;
-			dev_info(dev,"panel_simple_dsi_reload_desc() - panel found");
+			dev_info(dev,"panel found.\n");
 			panel_simple_of_get_desc_data(dev, np, desc);
 		}
 	}
