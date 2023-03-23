@@ -24,6 +24,7 @@
 #include <linux/backlight.h>
 #include <linux/gpio/consumer.h>
 #include <linux/module.h>
+#include <linux/string.h>
 #include <linux/of_platform.h>
 #include <linux/platform_device.h>
 #include <linux/regulator/consumer.h>
@@ -3463,8 +3464,6 @@ static int panel_simple_dsi_of_get_desc_data(struct device *dev,
  * Added to support Anbernic's V2 panel revision.
  * Once the panel has been identified, we can search the device tree 
  * and reload the correct panel description.
- * This works during the prepare possibly because the kernel's DRM 
- * driver defers setting the device frequency. 
  */
 static void panel_simple_dsi_reload_desc(struct panel_simple *panel)
 {
@@ -3475,13 +3474,13 @@ static void panel_simple_dsi_reload_desc(struct panel_simple *panel)
 	u8 id[2] = {0, 0};
 
 	dev_info(dev,"panel_simple_dsi_reload_desc()");
-	//if (memcmp(panel->panel_id, id, ARRAY_SIZE(id)) == 0)
-	if (!panel->panel_id[0] && !panel->panel_id[1])
+	if (memcmp(panel->panel_id, id, ARRAY_SIZE(id)) == 0)
+	//if (!panel->panel_id[0] && !panel->panel_id[1])
 		return;
 
-	//if (memcmp(panel->panel_id, desc->id, ARRAY_SIZE(desc->id)) == 0) {
-	if (panel->panel_id[0] == desc->id[0] &&
-	    panel->panel_id[1] == desc->id[1]) {
+	if (memcmp(panel->panel_id, desc->id, ARRAY_SIZE(desc->id)) == 0) {
+	//if (panel->panel_id[0] == desc->id[0] &&
+	//    panel->panel_id[1] == desc->id[1]) {
 		panel->panel_found = true;
 		return;
 	}
@@ -3493,9 +3492,9 @@ static void panel_simple_dsi_reload_desc(struct panel_simple *panel)
 		
 		of_property_read_u8_array(np, "id", id, ARRAY_SIZE(id));
 
- 		//if (memcmp(panel->panel_id, id, ARRAY_SIZE(id)) == 0) {
-		if (panel->panel_id[0] == id[0] &&
-	    	    panel->panel_id[1] == id[1]) {
+ 		if (memcmp(panel->panel_id, id, ARRAY_SIZE(id)) == 0) {
+		//if (panel->panel_id[0] == id[0] &&
+	    	//    panel->panel_id[1] == id[1]) {
 			panel->panel_found = true;
 			dev_info(dev,"panel found.\n");
 			panel_simple_of_get_desc_data(dev, np, desc);
